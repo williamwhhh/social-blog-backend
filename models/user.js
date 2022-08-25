@@ -7,7 +7,7 @@ var userSchema = mongoose.Schema({
   password: String,
   DOB: Date,
   gender: String,
-  avatar: Buffer,
+  avatar: String,
   likedPosts: [String],
 });
 

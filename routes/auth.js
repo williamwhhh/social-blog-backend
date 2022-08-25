@@ -42,8 +42,4 @@ router.post('/signup', function (req, res, next) {
   }
 });
 
-// router.get('/:id([0-9]{5})', function (req, res) {
-//   res.json({ name: 'willllllll' });
-// });
-
 module.exports = router;
