@@ -4,6 +4,7 @@ var mongoose = require('mongoose');
 
 mongoose.connect('mongodb://localhost/my_db');
 
+var User = require('../models/user');
 var Post = require('../models/post');
 
 const multer = require('multer');
@@ -41,7 +42,7 @@ router.post('/addPost', upload.array('images[]'), function (req, res) {
     if (err) {
       res.json({ message: err.message });
     } else {
-      res.json({ post: obj });
+      res.json({ message: 'Posted', post: obj });
     }
   });
 });
@@ -52,8 +53,27 @@ router.get('/getAllPosts', function (req, res) {
       res.json({ message: err.message });
     } else {
       console.log(posts);
-      res.json({ posts: posts });
+      res.json({ message: 'Posts loaded', posts: posts });
     }
+  });
+});
+
+router.post('/bookmark', function (req, response) {
+  User.findOne({ email: req.body.email }, (err, res) => {
+    if (err) {
+      res.status(404).json({ message: err.message });
+    }
+    res.bookmarks.push(req.body.postId);
+    User.findOneAndUpdate(
+      { email: req.body.email },
+      { bookmarks: res.bookmarks },
+      (err, res) => {
+        if (err) {
+          res.status(404).json({ message: err.message });
+        }
+      }
+    );
+    response.json({ message: 'added bookmark', bookmarks: res.bookmarks });
   });
 });
 

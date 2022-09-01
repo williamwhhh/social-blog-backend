@@ -9,6 +9,7 @@ var userSchema = mongoose.Schema({
   gender: String,
   avatar: String,
   likedPosts: [String],
+  bookmarks: [String],
 });
 
 module.exports = mongoose.model('user', userSchema);

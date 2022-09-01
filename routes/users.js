@@ -33,7 +33,7 @@ router.post('/editAvatar', upload.single('avatar'), function (req, res) {
     { avatar: req.file.filename },
     (err, res) => {
       if (err) {
-        console.log(err);
+        res.status(404).json({ message: err.message });
       }
     }
   );
@@ -42,10 +42,11 @@ router.post('/editAvatar', upload.single('avatar'), function (req, res) {
     { avatar: req.file.filename },
     (err, res) => {
       if (err) {
-        console.log(err);
+        res.status(404).json({ message: err.message });
       }
     }
   );
   res.json({ avatar: req.file.filename });
 });
+
 module.exports = router;
