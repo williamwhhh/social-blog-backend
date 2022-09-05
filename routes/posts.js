@@ -8,6 +8,7 @@ var User = require('../models/user');
 var Post = require('../models/post');
 
 const multer = require('multer');
+const { resolveContent } = require('nodemailer/lib/shared');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -37,6 +38,7 @@ router.post('/addPost', upload.array('images[]'), function (req, res) {
     text: req.body.text,
     images: imagePaths,
     location: req.body.location,
+    avatar: req.body.avatar,
   });
   newPost.save(function (err, obj) {
     if (err) {
@@ -61,7 +63,7 @@ router.get('/getAllPosts', function (req, res) {
 router.post('/bookmark', function (req, response) {
   User.findOne({ email: req.body.email }, (err, res) => {
     if (err) {
-      res.status(404).json({ message: err.message });
+      response.status(404).json({ message: err.message });
     }
     res.bookmarks.push(req.body.postId);
     User.findOneAndUpdate(
@@ -69,11 +71,41 @@ router.post('/bookmark', function (req, response) {
       { bookmarks: res.bookmarks },
       (err, res) => {
         if (err) {
-          res.status(404).json({ message: err.message });
+          response.status(404).json({ message: err.message });
         }
       }
     );
     response.json({ message: 'added bookmark', bookmarks: res.bookmarks });
+  });
+});
+
+router.get('/getBookmarks', function (req, res) {
+  User.findOne({ email: req.headers.email }, (err, user) => {
+    if (err) {
+      res.status(404).json({ message: err.message });
+    }
+
+    var promise = (id) => {
+      return new Promise((resolve, reject) => {
+        Post.findById(id, function (err, post) {
+          if (err) {
+            reject(err);
+          }
+          resolve(post);
+        });
+      });
+    };
+
+    let promises = user.bookmarks.map((id) => promise(id));
+
+    Promise.all(promises).then(
+      (val) => {
+        res.json({ message: 'bookmarks loaded', bookmarks: val });
+      },
+      (err) => {
+        res.status(404).json({ message: err.message });
+      }
+    );
   });
 });
 
