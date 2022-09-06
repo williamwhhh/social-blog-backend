@@ -9,6 +9,7 @@ var Post = require('../models/post');
 
 const multer = require('multer');
 const { resolveContent } = require('nodemailer/lib/shared');
+const { array } = require('mongoose/lib/utils');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -106,6 +107,28 @@ router.get('/getBookmarks', function (req, res) {
         res.status(404).json({ message: err.message });
       }
     );
+  });
+});
+
+router.post('/removeBookmark', function (req, response) {
+  User.findOne({ email: req.body.email }, (err, res) => {
+    if (err) {
+      response.status(404).json({ message: err.message });
+    }
+    let index = res.bookmarks.indexOf(req.body.postId);
+    if (index !== -1) {
+      res.bookmarks.splice(index, 1);
+    }
+    User.findOneAndUpdate(
+      { email: req.body.email },
+      { bookmarks: res.bookmarks },
+      (err, res) => {
+        if (err) {
+          response.status(404).json({ message: err.message });
+        }
+      }
+    );
+    response.json({ message: 'removed bookmark', bookmarks: res.bookmarks });
   });
 });
 
