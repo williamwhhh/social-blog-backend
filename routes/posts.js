@@ -8,8 +8,6 @@ var User = require('../models/user');
 var Post = require('../models/post');
 
 const multer = require('multer');
-const { resolveContent } = require('nodemailer/lib/shared');
-const { array } = require('mongoose/lib/utils');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -25,9 +23,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// User.find({ name: 'will', age: 20 }, (err, res) => {
-//   console.log(res);
-// });
 router.post('/addPost', upload.array('images[]'), function (req, res) {
   let imagePaths = [];
   req.files.forEach((i) => {
@@ -43,7 +38,7 @@ router.post('/addPost', upload.array('images[]'), function (req, res) {
   });
   newPost.save(function (err, obj) {
     if (err) {
-      res.json({ message: err.message });
+      res.status(404).json({ message: err.message });
     } else {
       res.json({ message: 'Posted', post: obj });
     }
@@ -53,9 +48,8 @@ router.post('/addPost', upload.array('images[]'), function (req, res) {
 router.get('/getAllPosts', function (req, res) {
   Post.find({}, function (err, posts) {
     if (err) {
-      res.json({ message: err.message });
+      res.status(404).json({ message: err.message });
     } else {
-      console.log(posts);
       res.json({ message: 'Posts loaded', posts: posts });
     }
   });

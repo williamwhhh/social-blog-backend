@@ -6,10 +6,9 @@ mongoose.connect('mongodb://localhost/my_db');
 
 var User = require('../models/user');
 var Post = require('../models/post');
-// User.find({ name: 'will', age: 20 }, (err, res) => {
-//   console.log(res);
-// });
+
 const multer = require('multer');
+var fs = require('fs');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -25,28 +24,58 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-router.post('/editAvatar', upload.single('avatar'), function (req, res) {
-  console.log(req.body.email);
-  console.log(req.file.filename);
-  User.findOneAndUpdate(
-    { email: req.body.email },
-    { avatar: req.file.filename },
-    (err, res) => {
-      if (err) {
-        res.status(404).json({ message: err.message });
+router.post('/editProfile', upload.single('avatar'), function (req, resp) {
+  if (req.file) {
+    User.findOneAndUpdate(
+      { email: req.body.email },
+      { name: req.body.name, DOB: req.body.DOB, avatar: req.file.filename },
+      (err, res) => {
+        if (err) {
+          resp.status(404).json({ message: err.message });
+        }
+        if (res.avatar) {
+          fs.unlinkSync(`./public/images/${res.avatar}`);
+        }
       }
-    }
-  );
-  Post.updateMany(
-    { email: req.body.email },
-    { avatar: req.file.filename },
-    (err, res) => {
-      if (err) {
-        res.status(404).json({ message: err.message });
+    );
+    Post.updateMany(
+      { email: req.body.email },
+      { name: req.body.name, avatar: req.file.filename },
+      (err, res) => {
+        if (err) {
+          resp.status(404).json({ message: err.message });
+        }
       }
-    }
-  );
-  res.json({ avatar: req.file.filename });
+    );
+    resp.json({
+      name: req.body.name,
+      DOB: req.body.DOB,
+      avatar: req.file.filename,
+    });
+  } else {
+    User.findOneAndUpdate(
+      { email: req.body.email },
+      { name: req.body.name, DOB: req.body.DOB },
+      (err, res) => {
+        if (err) {
+          resp.status(404).json({ message: err.message });
+        }
+      }
+    );
+    Post.updateMany(
+      { email: req.body.email },
+      { name: req.body.name },
+      (err, res) => {
+        if (err) {
+          resp.status(404).json({ message: err.message });
+        }
+      }
+    );
+    resp.json({
+      name: req.body.name,
+      DOB: req.body.DOB,
+    });
+  }
 });
 
 module.exports = router;
