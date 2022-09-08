@@ -6,7 +6,7 @@ mongoose.connect('mongodb://localhost/my_db');
 
 var User = require('../models/user');
 var Post = require('../models/post');
-
+var fs = require('fs');
 const multer = require('multer');
 
 const storage = multer.diskStorage({
@@ -41,6 +41,19 @@ router.post('/addPost', upload.array('images[]'), function (req, res) {
       res.status(404).json({ message: err.message });
     } else {
       res.json({ message: 'Posted', post: obj });
+    }
+  });
+});
+
+router.post('/removePost', function (req, res) {
+  Post.findByIdAndRemove(req.body.id, function (err, val) {
+    if (err) {
+      res.status(404).json({ message: err.message });
+    } else {
+      req.body.images.forEach((image) => {
+        fs.unlinkSync(`./public/images/${image}`);
+      });
+      res.json({ message: 'Deleted that post' });
     }
   });
 });
@@ -86,7 +99,18 @@ router.get('/getBookmarks', function (req, res) {
           if (err) {
             reject(err);
           }
-          resolve(post);
+          if (post) {
+            resolve(post);
+          } else {
+            resolve({
+              _id: id,
+              name: '',
+              username: '',
+              text: 'This post has been deleted by its poster',
+              images: [],
+              avatar: null,
+            });
+          }
         });
       });
     };
