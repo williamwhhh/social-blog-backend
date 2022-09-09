@@ -24,58 +24,103 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-router.post('/editProfile', upload.single('avatar'), function (req, resp) {
+router.post('/editProfile', upload.single('avatar'), function (req, res) {
   if (req.file) {
-    User.findOneAndUpdate(
-      { email: req.body.email },
-      { name: req.body.name, DOB: req.body.DOB, avatar: req.file.filename },
-      (err, res) => {
-        if (err) {
-          resp.status(404).json({ message: err.message });
-        }
-        if (res.avatar) {
-          fs.unlinkSync(`./public/images/${res.avatar}`);
-        }
+    var updateUser = () => {
+      return new Promise((resolve, reject) => {
+        User.findOneAndUpdate(
+          { username: req.body.username },
+          { name: req.body.name, DOB: req.body.DOB, avatar: req.file.filename },
+          (err, user) => {
+            if (err) {
+              reject(err);
+            }
+            if (user.avatar) {
+              fs.unlinkSync(`./public/images/${user.avatar}`);
+            }
+            resolve();
+          }
+        );
+      });
+    };
+    var updatePosts = () => {
+      return new Promise((resolve, reject) => {
+        Post.updateMany(
+          { username: req.body.username },
+          { name: req.body.name, avatar: req.file.filename },
+          (err, val) => {
+            if (err) {
+              reject(err);
+            }
+            resolve();
+          }
+        );
+      });
+    };
+    Promise.all([updateUser(), updatePosts()]).then(
+      (val) => {
+        res.json({
+          message: 'profile updated',
+          name: req.body.name,
+          DOB: req.body.DOB,
+          avatar: req.file.filename,
+        });
+      },
+      (err) => {
+        res.status(404).json({ message: err.message });
       }
     );
-    Post.updateMany(
-      { email: req.body.email },
-      { name: req.body.name, avatar: req.file.filename },
-      (err, res) => {
-        if (err) {
-          resp.status(404).json({ message: err.message });
-        }
-      }
-    );
-    resp.json({
-      name: req.body.name,
-      DOB: req.body.DOB,
-      avatar: req.file.filename,
-    });
   } else {
-    User.findOneAndUpdate(
-      { email: req.body.email },
-      { name: req.body.name, DOB: req.body.DOB },
-      (err, res) => {
-        if (err) {
-          resp.status(404).json({ message: err.message });
-        }
+    var updateUser = () => {
+      return new Promise((resolve, reject) => {
+        User.findOneAndUpdate(
+          { username: req.body.username },
+          { name: req.body.name, DOB: req.body.DOB },
+          (err, user) => {
+            if (err) {
+              reject(err);
+            }
+            resolve();
+          }
+        );
+      });
+    };
+    var updatePosts = () => {
+      return new Promise((resolve, reject) => {
+        Post.updateMany(
+          { username: req.body.username },
+          { name: req.body.name },
+          (err, val) => {
+            if (err) {
+              reject(err);
+            }
+            resolve();
+          }
+        );
+      });
+    };
+    Promise.all([updateUser(), updatePosts()]).then(
+      (val) => {
+        res.json({
+          message: 'profile updated',
+          name: req.body.name,
+          DOB: req.body.DOB,
+        });
+      },
+      (err) => {
+        res.status(404).json({ message: err.message });
       }
     );
-    Post.updateMany(
-      { email: req.body.email },
-      { name: req.body.name },
-      (err, res) => {
-        if (err) {
-          resp.status(404).json({ message: err.message });
-        }
-      }
-    );
-    resp.json({
-      name: req.body.name,
-      DOB: req.body.DOB,
-    });
   }
+});
+
+router.get('/getAllUsers', function (req, res) {
+  User.find({}, function (err, users) {
+    if (err) {
+      res.status(404).json({ message: err.message });
+    }
+    res.json({ users: users });
+  });
 });
 
 module.exports = router;

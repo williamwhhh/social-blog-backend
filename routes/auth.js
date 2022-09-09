@@ -26,20 +26,25 @@ router.post('/login', function (req, res, next) {
 });
 
 router.post('/signup', function (req, res, next) {
-  if (User.findOne({ email: req.body.email })) {
-    var newUser = new User({
-      username: req.body.username,
-      name: req.body.name,
-      email: req.body.email,
-      password: req.body.password,
-      DOB: req.body.DOB,
-      gender: req.body.gender,
-    });
-    newUser.save();
-    res.json({ message: 'signed up successfully' });
-  } else {
-    res.status(400).json({ message: 'user already exist' });
-  }
+  User.findOne({ email: req.body.email }, function (err, user) {
+    if (err) {
+      res.status(404).json({ message: err.message });
+    }
+    if (user) {
+      res.status(400).json({ message: 'user already existed' });
+    } else {
+      var newUser = new User({
+        username: req.body.username,
+        name: req.body.name,
+        email: req.body.email,
+        password: req.body.password,
+        DOB: req.body.DOB ? req.body.DOB : Date(),
+        gender: req.body.gender ? req.body.gender : null,
+      });
+      newUser.save();
+      res.json({ message: 'signed up successfully' });
+    }
+  });
 });
 
 module.exports = router;
