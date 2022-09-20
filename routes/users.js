@@ -119,7 +119,16 @@ router.get('/getAllUsers', function (req, res) {
     if (err) {
       res.status(404).json({ message: err.message });
     }
-    res.json({ users: users });
+    let contacts = [];
+    users.forEach((user) => {
+      contacts.push({
+        username: user.username,
+        name: user.name,
+        avatar: user.avatar,
+        messages: [],
+      });
+    });
+    res.json({ contacts: contacts });
   });
 });
 

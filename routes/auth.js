@@ -31,14 +31,14 @@ router.post('/signup', function (req, res, next) {
       res.status(404).json({ message: err.message });
     }
     if (user) {
-      res.status(400).json({ message: 'the email has been registered' });
+      res.status(400).json({ error: 'the email has been registered' });
     } else {
       User.findOne({ username: req.body.username }, function (err, user) {
         if (err) {
           res.status(404).json({ message: err.message });
         }
         if (user) {
-          res.status(400).json({ message: 'the username is already existed' });
+          res.status(400).json({ error: 'the username is already existed' });
         } else {
           var newUser = new User({
             username: req.body.username,
