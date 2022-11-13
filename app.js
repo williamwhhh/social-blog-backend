@@ -2,6 +2,8 @@ var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
+var session = require('express-session');
+// var MongoDBStore = require('connect-mongodb-session')(session);
 var logger = require('morgan');
 var cors = require('cors');
 var bodyParser = require('body-parser');
@@ -12,8 +14,11 @@ var authRouter = require('./routes/auth');
 var postRouter = require('./routes/posts');
 
 var app = express();
-
-app.use(cors());
+// var store = new MongoDBStore({
+//   uri: 'mongodb://localhost:27017/connect_mongodb_session_test',
+//   collection: 'mySessions',
+// });
+app.use(cors({ credentials: true, origin: true }));
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -25,10 +30,28 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
+app.use(
+  session({
+    secret: 'hello',
+    cookie: { secure: false },
+    // store: store,
+    resave: false,
+    saveUninitialized: true,
+  })
+);
 
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
 app.use('/auth', authRouter);
+app.use(function checkSignIn(req, res, next) {
+  if (req.session.user) {
+    next(); //If session exists, proceed to page
+  } else {
+    var err = new Error('Not logged in!');
+    console.log(err.message);
+    next(err); //Error, trying to access unauthorized page!
+  }
+});
+app.use('/users', usersRouter);
 app.use('/posts', postRouter);
 
 // catch 404 and forward to error handler

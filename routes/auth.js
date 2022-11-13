@@ -12,12 +12,22 @@ var User = require('../models/user');
 
 /* GET home page. */
 router.post('/login', function (req, res, next) {
-  User.findOne({ email: req.body.email }, (err, arr) => {
+  User.findOne({ email: req.body.email }, (err, user) => {
     if (err) {
       res.status(404).json({ message: err.message });
     } else {
-      if (arr && arr.password === req.body.password) {
-        res.json({ message: 'successfully logged in', user: arr });
+      if (user && user.password === req.body.password) {
+        console.log(req.session);
+        req.session.regenerate(function (err) {
+          if (err) next(err);
+
+          req.session.user = user;
+          console.log(req.session);
+          req.session.save(function (err) {
+            if (err) next(err);
+            res.json({ message: 'successfully logged in', user: user });
+          });
+        });
       } else {
         res.json({ message: 'incorrect email address or password' });
       }
