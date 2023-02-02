@@ -46,7 +46,7 @@ app.use(function checkSignIn(req, res, next) {
   if (req.session.user) {
     next(); //If session exists, proceed to page
   } else {
-    var err = new Error('Not logged in!');
+    var err = new Error('user session expired');
     console.log(err.message);
     next(err); //Error, trying to access unauthorized page!
   }
@@ -67,7 +67,8 @@ app.use(function (err, req, res, next) {
 
   // render the error page
   res.status(err.status || 500);
-  res.render('error');
+  // res.render('error');
+  res.json({ message: err.message });
 });
 
 module.exports = app;

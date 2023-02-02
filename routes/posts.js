@@ -35,6 +35,7 @@ router.post('/addPost', upload.array('images[]'), function (req, res) {
     images: imagePaths,
     location: req.body.location,
     avatar: req.body.avatar,
+    comments: [],
   });
   newPost.save(function (err, obj) {
     if (err) {
@@ -64,6 +65,16 @@ router.get('/getAllPosts', function (req, res) {
       res.status(404).json({ message: err.message });
     } else {
       res.json({ message: 'All Posts Loaded', posts: posts });
+    }
+  });
+});
+
+router.get('/getPost', function (req, res) {
+  Post.findById(req.headers.id, function (err, post) {
+    if (err) {
+      res.status(404).json({ message: err.message });
+    } else {
+      res.json({ post: post });
     }
   });
 });
@@ -229,6 +240,40 @@ router.post('/unlikePost', function (req, response) {
       }
     );
     response.json({ message: 'unliked the post', likedPosts: res.likedPosts });
+  });
+});
+
+router.post('/addComment', upload.array('images[]'), function (req, response) {
+  let imagePaths = [];
+  req.files.forEach((i) => {
+    imagePaths.push(i.filename);
+  });
+  Post.findById(req.body.postId, (err, res) => {
+    if (err) {
+      response.status(404).json({ message: err.message });
+    }
+
+    res.comments.push({
+      username: req.body.username,
+      name: req.body.name,
+      text: req.body.text,
+      images: imagePaths,
+      location: req.body.location,
+      avatar: req.body.avatar,
+    });
+    Post.findByIdAndUpdate(
+      req.body.postId,
+      { comments: res.comments },
+      (err, res2) => {
+        if (err) {
+          response.status(404).json({ message: err.message });
+        }
+        response.json({
+          message: 'added comment',
+          comments: res.comments,
+        });
+      }
+    );
   });
 });
 

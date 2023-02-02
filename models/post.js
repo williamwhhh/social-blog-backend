@@ -1,9 +1,12 @@
 var mongoose = require('mongoose');
 
 var commentSchema = mongoose.Schema({
-  username: String,
   avatar: String,
-  comment: String,
+  username: String,
+  name: String,
+  text: String,
+  images: [String],
+  location: String,
 });
 
 var postSchema = mongoose.Schema({
@@ -15,7 +18,7 @@ var postSchema = mongoose.Schema({
   location: String,
   numOfLike: Number,
   numOfRepost: Number,
-  comments: [commentSchema],
+  comments: [Object],
 });
 
 module.exports = mongoose.model('post', postSchema);
