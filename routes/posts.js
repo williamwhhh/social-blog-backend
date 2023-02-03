@@ -243,17 +243,17 @@ router.post('/unlikePost', function (req, response) {
   });
 });
 
-router.post('/addComment', upload.array('images[]'), function (req, response) {
+router.post('/addComment', upload.array('images[]'), function (req, res) {
   let imagePaths = [];
   req.files.forEach((i) => {
     imagePaths.push(i.filename);
   });
-  Post.findById(req.body.postId, (err, res) => {
+  Post.findById(req.body.postId, (err, val) => {
     if (err) {
-      response.status(404).json({ message: err.message });
+      res.status(404).json({ message: err.message });
     }
 
-    res.comments.push({
+    val.comments.push({
       username: req.body.username,
       name: req.body.name,
       text: req.body.text,
@@ -263,17 +263,51 @@ router.post('/addComment', upload.array('images[]'), function (req, response) {
     });
     Post.findByIdAndUpdate(
       req.body.postId,
-      { comments: res.comments },
-      (err, res2) => {
+      { comments: val.comments },
+      (err, val2) => {
         if (err) {
-          response.status(404).json({ message: err.message });
+          res.status(404).json({ message: err.message });
         }
-        response.json({
-          message: 'added comment',
-          comments: res.comments,
+        res.json({
+          message: 'Added a comment',
+          comments: val.comments,
         });
       }
     );
+  });
+});
+
+router.post('/removeComment', function (req, res) {
+  Post.findById(req.body.postId, function (err, val) {
+    if (err) {
+      res.status(404).json({ message: err.message });
+    } else {
+      for (let i = 0; i < val.comments.length; i++) {
+        if (
+          val.comments[i].username === req.body.username &&
+          val.comments[i].text === req.body.text
+        ) {
+          val.comments.splice(i, 1);
+          req.body.images.forEach((image) => {
+            fs.unlinkSync(`./public/images/${image}`);
+          });
+          break;
+        }
+      }
+      Post.findByIdAndUpdate(
+        req.body.postId,
+        { comments: val.comments },
+        (err, val2) => {
+          if (err) {
+            res.status(404).json({ message: err.message });
+          }
+          res.json({
+            message: 'Deleted a comment',
+            comments: val.comments,
+          });
+        }
+      );
+    }
   });
 });
 

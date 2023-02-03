@@ -17,7 +17,6 @@ router.post('/login', function (req, res, next) {
       res.status(404).json({ message: err.message });
     } else {
       if (user && user.password === req.body.password) {
-        console.log(req.session);
         req.session.regenerate(function (err) {
           if (err) next(err);
 
