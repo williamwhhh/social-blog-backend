@@ -16,7 +16,7 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     cb(
       null,
-      Date.now() + '-' + Math.random().toString() + '-' + file.originalname
+      req.session.user.username + '-' + Date.now() + '-' + file.originalname
     );
   },
 });
@@ -28,6 +28,7 @@ router.post('/addPost', upload.array('images[]'), function (req, res) {
   req.files.forEach((i) => {
     imagePaths.push(i.filename);
   });
+  let date = new Date();
   var newPost = new Post({
     username: req.body.username,
     name: req.body.name,
@@ -35,6 +36,8 @@ router.post('/addPost', upload.array('images[]'), function (req, res) {
     images: imagePaths,
     location: req.body.location,
     avatar: req.body.avatar,
+    dateTime:
+      date.toLocaleTimeString().slice(0) + ', ' + date.toDateString().slice(4),
     comments: [],
   });
   newPost.save(function (err, obj) {
@@ -252,7 +255,7 @@ router.post('/addComment', upload.array('images[]'), function (req, res) {
     if (err) {
       res.status(404).json({ message: err.message });
     }
-
+    let date = new Date();
     val.comments.push({
       username: req.body.username,
       name: req.body.name,
@@ -260,6 +263,7 @@ router.post('/addComment', upload.array('images[]'), function (req, res) {
       images: imagePaths,
       location: req.body.location,
       avatar: req.body.avatar,
+      dateTime: date.toLocaleTimeString() + ', ' + date.toDateString().slice(4),
     });
     Post.findByIdAndUpdate(
       req.body.postId,
