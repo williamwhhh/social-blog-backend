@@ -10,6 +10,7 @@ var userSchema = mongoose.Schema({
   avatar: String,
   likedPosts: [String],
   bookmarks: [String],
+  commentedPosts: [String],
 });
 
 module.exports = mongoose.model('user', userSchema);

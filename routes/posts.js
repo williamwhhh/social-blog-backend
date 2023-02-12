@@ -251,68 +251,149 @@ router.post('/addComment', upload.array('images[]'), function (req, res) {
   req.files.forEach((i) => {
     imagePaths.push(i.filename);
   });
-  Post.findById(req.body.postId, (err, val) => {
-    if (err) {
-      res.status(404).json({ message: err.message });
-    }
-    let date = new Date();
-    val.comments.push({
-      username: req.body.username,
-      name: req.body.name,
-      text: req.body.text,
-      images: imagePaths,
-      location: req.body.location,
-      avatar: req.body.avatar,
-      dateTime: date.toLocaleTimeString() + ', ' + date.toDateString().slice(4),
-    });
-    Post.findByIdAndUpdate(
-      req.body.postId,
-      { comments: val.comments },
-      (err, val2) => {
-        if (err) {
-          res.status(404).json({ message: err.message });
-        }
-        res.json({
-          message: 'Added a comment',
-          comments: val.comments,
-        });
-      }
-    );
-  });
-});
+  var comments = [];
 
-router.post('/removeComment', function (req, res) {
-  Post.findById(req.body.postId, function (err, val) {
-    if (err) {
-      res.status(404).json({ message: err.message });
-    } else {
-      for (let i = 0; i < val.comments.length; i++) {
-        if (
-          val.comments[i].username === req.body.username &&
-          val.comments[i].text === req.body.text
-        ) {
-          val.comments.splice(i, 1);
-          req.body.images.forEach((image) => {
-            fs.unlinkSync(`./public/images/${image}`);
-          });
-          break;
-        }
+  const updatePost = new Promise((resolve, reject) => {
+    Post.findById(req.body.postId, (err, val) => {
+      if (err) {
+        reject(err);
       }
+      let date = new Date();
+      val.comments.push({
+        username: req.body.username,
+        name: req.body.name,
+        text: req.body.text,
+        images: imagePaths,
+        location: req.body.location,
+        avatar: req.body.avatar,
+        dateTime:
+          date.toLocaleTimeString() + ', ' + date.toDateString().slice(4),
+      });
       Post.findByIdAndUpdate(
         req.body.postId,
         { comments: val.comments },
         (err, val2) => {
           if (err) {
-            res.status(404).json({ message: err.message });
+            reject(err);
           }
-          res.json({
-            message: 'Deleted a comment',
-            comments: val.comments,
-          });
+          comments = val.comments;
+          resolve();
         }
       );
-    }
+    });
   });
+
+  const updateUser = new Promise((resolve, reject) => {
+    User.findOne({ username: req.body.username }, (err, val) => {
+      if (err) {
+        reject(err);
+      }
+      if (val.commentedPosts.includes(req.body.postId)) {
+        resolve();
+        return;
+      }
+      val.commentedPosts.push(req.body.postId);
+      User.findOneAndUpdate(
+        { username: req.body.username },
+        { commentedPosts: val.commentedPosts },
+        (err, val2) => {
+          if (err) {
+            reject(err);
+          }
+          resolve();
+        }
+      );
+    });
+  });
+
+  Promise.all([updatePost, updateUser]).then(
+    (val) => {
+      res.json({
+        message: 'Added a comment',
+        comments: comments,
+      });
+    },
+    (err) => {
+      res.status(404).json({ message: err.message });
+    }
+  );
+});
+
+router.post('/removeComment', async function (req, res) {
+  const updatePost = new Promise((resolve, reject) => {
+    Post.findById(req.body.postId, function (err, val) {
+      if (err) {
+        reject();
+      } else {
+        for (let i = 0; i < val.comments.length; i++) {
+          if (
+            val.comments[i].username === req.body.username &&
+            val.comments[i].text === req.body.text
+          ) {
+            val.comments.splice(i, 1);
+            req.body.images.forEach((image) => {
+              fs.unlinkSync(`./public/images/${image}`);
+            });
+            break;
+          }
+        }
+        Post.findByIdAndUpdate(
+          req.body.postId,
+          { comments: val.comments },
+          (err, val2) => {
+            if (err) {
+              reject();
+            }
+            resolve(val.comments);
+          }
+        );
+      }
+    });
+  });
+
+  const updateUser = (comments) =>
+    new Promise((resolve, reject) => {
+      for (let i = 0; i < comments.length; i++) {
+        if (comments[i].username === req.body.username) {
+          resolve();
+          res.json({
+            message: 'Deleted a comment',
+            comments: comments,
+          });
+          return;
+        }
+      }
+      User.findOne({ username: req.body.username }, (err, val) => {
+        if (err) {
+          reject(err);
+        }
+        val.commentedPosts.splice(
+          val.commentedPosts.indexOf(req.body.postId),
+          1
+        );
+        User.findOneAndUpdate(
+          { username: req.body.username },
+          { commentedPosts: val.commentedPosts },
+          (err, val2) => {
+            if (err) {
+              reject(err);
+            }
+            resolve(comments);
+            res.json({
+              message: 'Deleted a comment',
+              comments: comments,
+            });
+          }
+        );
+      });
+    });
+
+  updatePost.then(
+    (val) => updateUser(val),
+    (err) => {
+      res.status(404).json({ message: err.message });
+    }
+  );
 });
 
 module.exports = router;
