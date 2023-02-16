@@ -25,107 +25,137 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 router.post('/editProfile', upload.single('avatar'), function (req, res) {
-  var updateUser = new Promise((resolve, reject) => {
-    if (req.file) {
-      User.findOneAndUpdate(
-        { username: req.body.username },
-        {
-          name: req.body.name,
-          DOB: req.body.DOB,
-          avatar: req.file.filename,
-        },
-        (err, user) => {
-          if (err) {
-            reject(err);
+  var updateUser = () => {
+    return new Promise((resolve, reject) => {
+      if (req.file) {
+        User.findOneAndUpdate(
+          { username: req.body.username },
+          {
+            name: req.body.name,
+            DOB: req.body.DOB,
+            avatar: req.file.filename,
+          },
+          (err, user) => {
+            if (err) {
+              reject(err);
+            }
+            if (user.avatar) {
+              fs.unlinkSync(`./public/images/${user.avatar}`);
+            }
+            resolve();
           }
-          if (user.avatar) {
-            fs.unlinkSync(`./public/images/${user.avatar}`);
+        );
+      } else {
+        User.findOneAndUpdate(
+          { username: req.body.username },
+          {
+            name: req.body.name,
+            DOB: req.body.DOB,
+          },
+          (err, user) => {
+            if (err) {
+              reject(err);
+            }
+            resolve();
           }
-          resolve();
-        }
-      );
-    } else {
-      User.findOneAndUpdate(
-        { username: req.body.username },
-        {
-          name: req.body.name,
-          DOB: req.body.DOB,
-        },
-        (err, user) => {
-          if (err) {
-            reject(err);
-          }
-          resolve();
-        }
-      );
-    }
-  });
-  var updatePosts = new Promise((resolve, reject) => {
-    if (req.file) {
-      Post.updateMany(
-        { username: req.body.username },
-        { name: req.body.name, avatar: req.file ? req.file.filename : null },
-        (err, val) => {
-          if (err) {
-            reject(err);
-          }
-          resolve();
-        }
-      );
-    } else {
-      Post.updateMany(
-        { username: req.body.username },
-        { name: req.body.name },
-        (err, val) => {
-          if (err) {
-            reject(err);
-          }
-          resolve();
-        }
-      );
-    }
-  });
-  var updateComments = new Promise((resolve, reject) => {
-    User.findOne({ username: req.body.username }, (err, user) => {
-      if (user) {
-        var promise = (id) => {
-          return new Promise((resolve, reject) => {
-            Post.findById(id, function (err, post) {
-              if (err) {
-                reject(err);
-              }
-              if (post) {
-                for (let comment of post.comments) {
-                  if (comment.username === user.username) {
-                    comment.name = req.body.name;
-                    if (req.file) {
-                      comment.avatar = req.file.filename;
-                    }
-                  }
-                }
-                Post.findByIdAndUpdate(
-                  id,
-                  { comments: post.comments },
-                  (err, val) => {
-                    if (err) {
-                      reject(err);
-                    }
-                    resolve();
-                  }
-                );
-              }
-            });
-          });
-        };
-        let promises = user.commentedPosts.map((id) => promise(id));
-        Promise.all(promises).then(
-          (val) => resolve(),
-          (err) => reject()
         );
       }
     });
-  });
-  Promise.all([updateUser, updatePosts, updateComments]).then(
+  };
+  var updatePosts = () => {
+    return new Promise((resolve, reject) => {
+      if (req.file) {
+        Post.updateMany(
+          { username: req.body.username },
+          { name: req.body.name, avatar: req.file ? req.file.filename : null },
+          (err, val) => {
+            if (err) {
+              reject(err);
+            }
+            resolve();
+          }
+        );
+      } else {
+        Post.updateMany(
+          { username: req.body.username },
+          { name: req.body.name },
+          (err, val) => {
+            if (err) {
+              reject(err);
+            }
+            resolve();
+          }
+        );
+      }
+    });
+  };
+  var updateComments = () => {
+    return new Promise((resolve, reject) => {
+      User.findOne({ username: req.body.username }, (err, user) => {
+        if (user) {
+          var promise = (id) => {
+            return new Promise((resolve, reject) => {
+              Post.findById(id, function (err, post) {
+                if (err) {
+                  reject(err);
+                }
+                if (post) {
+                  for (let comment of post.comments) {
+                    if (comment.username === user.username) {
+                      comment.name = req.body.name;
+                      if (req.file) {
+                        comment.avatar = req.file.filename;
+                      }
+                    }
+                  }
+                  Post.findByIdAndUpdate(
+                    id,
+                    { comments: post.comments },
+                    (err, val) => {
+                      if (err) {
+                        reject(err);
+                      }
+                      resolve();
+                    }
+                  );
+                } else {
+                  //post got deleted so does comment
+                  user.commentedPosts.splice(
+                    user.commentedPosts.indexOf(id),
+                    1
+                  );
+                  User.findOneAndUpdate(
+                    { username: req.body.username },
+                    {
+                      commentedPosts: user.commentedPosts,
+                    },
+                    (err, val) => {
+                      if (err) {
+                        reject(err);
+                      }
+                      resolve();
+                    }
+                  );
+                }
+              });
+            });
+          };
+          let promises = user.commentedPosts.map((id) => promise(id));
+          Promise.all(promises).then(
+            (val) => {
+              resolve();
+            },
+            (err) => {
+              reject(err);
+            }
+          );
+        } else {
+          reject(err);
+        }
+      });
+    });
+  };
+  Promise.all([updateUser(), updatePosts(), updateComments()]).then(
     (val) => {
       if (req.file) {
         res.json({
