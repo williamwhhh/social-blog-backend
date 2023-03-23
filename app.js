@@ -12,6 +12,7 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var authRouter = require('./routes/auth');
 var postRouter = require('./routes/posts');
+var messagesRouter = require('./routes/messages');
 
 var app = express();
 // var store = new MongoDBStore({
@@ -53,6 +54,7 @@ app.use(function checkSignIn(req, res, next) {
 });
 app.use('/users', usersRouter);
 app.use('/posts', postRouter);
+app.use('/messages', messagesRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

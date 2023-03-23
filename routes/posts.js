@@ -72,6 +72,16 @@ router.get('/getAllPosts', function (req, res) {
   });
 });
 
+router.get('/getMyPosts', function (req, res) {
+  Post.find({ username: req.headers.username }, function (err, posts) {
+    if (err) {
+      res.status(404).json({ message: err.message });
+    } else {
+      res.json({ message: 'My Posts Loaded', posts: posts });
+    }
+  });
+});
+
 router.get('/getPost', function (req, res) {
   Post.findById(req.headers.id, function (err, post) {
     if (err) {

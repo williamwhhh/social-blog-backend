@@ -187,7 +187,6 @@ router.get('/getAllUsers', function (req, res) {
         username: user.username,
         name: user.name,
         avatar: user.avatar,
-        messages: [],
       });
     });
     res.json({ contacts: contacts });

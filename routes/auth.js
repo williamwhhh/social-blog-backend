@@ -21,7 +21,6 @@ router.post('/login', function (req, res, next) {
           if (err) next(err);
 
           req.session.user = user;
-          console.log(req.session);
           req.session.save(function (err) {
             if (err) next(err);
             res.json({ message: 'successfully logged in', user: user });
