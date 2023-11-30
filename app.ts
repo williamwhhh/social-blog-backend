@@ -1,20 +1,19 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var session = require('express-session');
+import createError from 'http-errors';
+import express from 'express';
+import path from 'path';
+import cookieParser from 'cookie-parser';
+import session from 'express-session';
 // var MongoDBStore = require('connect-mongodb-session')(session);
-var logger = require('morgan');
-var cors = require('cors');
-var bodyParser = require('body-parser');
+import logger from 'morgan';
+import cors from 'cors';
+import bodyParser from 'body-parser';
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
-var authRouter = require('./routes/auth');
-var postRouter = require('./routes/posts');
-var messagesRouter = require('./routes/messages');
+import authRouter from './routes/auth';
+import usersRouter from './routes/users';
+import postRouter from './routes/posts';
+import messagesRouter from './routes/messages';
 
-var app = express();
+const app = express();
 // var store = new MongoDBStore({
 //   uri: 'mongodb://localhost:27017/connect_mongodb_session_test',
 //   collection: 'mySessions',
@@ -41,10 +40,10 @@ app.use(
   })
 );
 
-app.use('/', indexRouter);
 app.use('/auth', authRouter);
 app.use(function checkSignIn(req, res, next) {
-  if (req.session.user) {
+  const user = (req.session as any).user;
+  if (user) {
     next(); //If session exists, proceed to page
   } else {
     var err = new Error('user session expired');
@@ -71,6 +70,6 @@ app.use(function (err, req, res, next) {
   res.status(err.status || 500);
   // res.render('error');
   res.json({ message: err.message });
-});
+} as express.ErrorRequestHandler);
 
-module.exports = app;
+export default app;

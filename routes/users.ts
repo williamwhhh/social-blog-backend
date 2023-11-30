@@ -1,24 +1,20 @@
-var express = require('express');
-var router = express.Router();
-var mongoose = require('mongoose');
+import express from 'express';
+import mongoose from 'mongoose';
+import User from '../models/user';
+import Post from '../models/post';
+import multer from 'multer';
+import fs from 'fs';
 
+const router = express.Router();
 mongoose.connect('mongodb://localhost/my_db');
-
-var User = require('../models/user');
-var Post = require('../models/post');
-
-const multer = require('multer');
-var fs = require('fs');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'public/images');
   },
   filename: (req, file, cb) => {
-    cb(
-      null,
-      req.session.user.username + '-' + Date.now() + '-' + file.originalname
-    );
+    const user = (req.session as any).user;
+    cb(null, user.username + '-' + Date.now() + '-' + file.originalname);
   },
 });
 
@@ -26,7 +22,7 @@ const upload = multer({ storage: storage });
 
 router.post('/editProfile', upload.single('avatar'), function (req, res) {
   var updateUser = () => {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       if (req.file) {
         User.findOneAndUpdate(
           { username: req.body.username },
@@ -35,7 +31,7 @@ router.post('/editProfile', upload.single('avatar'), function (req, res) {
             DOB: req.body.DOB,
             avatar: req.file.filename,
           },
-          (err, user) => {
+          (err: any, user: any) => {
             if (err) {
               reject(err);
             }
@@ -52,7 +48,7 @@ router.post('/editProfile', upload.single('avatar'), function (req, res) {
             name: req.body.name,
             DOB: req.body.DOB,
           },
-          (err, user) => {
+          (err: any, user: any) => {
             if (err) {
               reject(err);
             }
@@ -63,12 +59,12 @@ router.post('/editProfile', upload.single('avatar'), function (req, res) {
     });
   };
   var updatePosts = () => {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       if (req.file) {
         Post.updateMany(
           { username: req.body.username },
           { name: req.body.name, avatar: req.file ? req.file.filename : null },
-          (err, val) => {
+          (err: any, val: any) => {
             if (err) {
               reject(err);
             }
@@ -79,7 +75,7 @@ router.post('/editProfile', upload.single('avatar'), function (req, res) {
         Post.updateMany(
           { username: req.body.username },
           { name: req.body.name },
-          (err, val) => {
+          (err: any, val: any) => {
             if (err) {
               reject(err);
             }
@@ -90,12 +86,12 @@ router.post('/editProfile', upload.single('avatar'), function (req, res) {
     });
   };
   var updateComments = () => {
-    return new Promise((resolve, reject) => {
-      User.findOne({ username: req.body.username }, (err, user) => {
+    return new Promise<void>((resolve, reject) => {
+      User.findOne({ username: req.body.username }, (err: any, user: any) => {
         if (user) {
-          var promise = (id) => {
-            return new Promise((resolve, reject) => {
-              Post.findById(id, function (err, post) {
+          var promise = (id: string) => {
+            return new Promise<void>((resolve, reject) => {
+              Post.findById(id, function (err: any, post: any) {
                 if (err) {
                   reject(err);
                 }
@@ -111,7 +107,7 @@ router.post('/editProfile', upload.single('avatar'), function (req, res) {
                   Post.findByIdAndUpdate(
                     id,
                     { comments: post.comments },
-                    (err, val) => {
+                    (err: any, val: any) => {
                       if (err) {
                         reject(err);
                       }
@@ -129,7 +125,7 @@ router.post('/editProfile', upload.single('avatar'), function (req, res) {
                     {
                       commentedPosts: user.commentedPosts,
                     },
-                    (err, val) => {
+                    (err: any, val: any) => {
                       if (err) {
                         reject(err);
                       }
@@ -140,7 +136,7 @@ router.post('/editProfile', upload.single('avatar'), function (req, res) {
               });
             });
           };
-          let promises = user.commentedPosts.map((id) => promise(id));
+          let promises = user.commentedPosts.map((id: string) => promise(id));
           Promise.all(promises).then(
             (val) => {
               resolve();
@@ -177,12 +173,12 @@ router.post('/editProfile', upload.single('avatar'), function (req, res) {
 });
 
 router.get('/getAllUsers', function (req, res) {
-  User.find({}, function (err, users) {
+  User.find({}, function (err: any, users: any) {
     if (err) {
       res.status(404).json({ message: err.message });
     }
-    let contacts = [];
-    users.forEach((user) => {
+    let contacts: any[] = [];
+    users.forEach((user: any) => {
       contacts.push({
         username: user.username,
         name: user.name,
@@ -193,4 +189,4 @@ router.get('/getAllUsers', function (req, res) {
   });
 });
 
-module.exports = router;
+export default router;

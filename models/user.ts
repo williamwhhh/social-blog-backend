@@ -13,4 +13,4 @@ var userSchema = mongoose.Schema({
   commentedPosts: [String],
 });
 
-module.exports = mongoose.model('user', userSchema);
+export default mongoose.model('user', userSchema);

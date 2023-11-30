@@ -12,4 +12,4 @@ var roomSchema = mongoose.Schema({
   messages: [messageSchema],
 });
 
-module.exports = mongoose.model('room', roomSchema);
+export default mongoose.model('room', roomSchema);

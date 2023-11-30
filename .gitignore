@@ -10,6 +10,10 @@
 *.userosscache
 *.sln.docstates
 
+# Ignore all files in the "images" directory
+public/images/*
+dist/public/images/*
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

@@ -1,13 +1,12 @@
-var express = require('express');
-var router = express.Router();
-var mongoose = require('mongoose');
-const { createServer } = require('http');
-const { Server } = require('socket.io');
+import express from 'express';
+import mongoose from 'mongoose';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import User from '../models/user';
+import Room from '../models/room';
 
+const router = express.Router();
 mongoose.connect('mongodb://localhost/my_db');
-
-var User = require('../models/user');
-var Room = require('../models/room');
 
 router.get('/getRoomDetails', function (req, res) {
   Room.findOne(
@@ -17,7 +16,7 @@ router.get('/getRoomDetails', function (req, res) {
         { participants: [req.headers.user2, req.headers.user1] },
       ],
     },
-    function (err, room) {
+    function (err: any, room: any) {
       if (err) {
         res.status(404).json({ message: err.message });
       }
@@ -27,7 +26,7 @@ router.get('/getRoomDetails', function (req, res) {
         var newRoom = new Room({
           participants: [req.headers.user1, req.headers.user2],
         });
-        newRoom.save().then((room) => {
+        newRoom.save().then((room: any) => {
           res.json({ roomId: room._id, messages: [] });
         });
       }
@@ -43,7 +42,7 @@ router.get('/deleteRoom', function (req, res) {
         { participants: [req.headers.user2, req.headers.user1] },
       ],
     },
-    function (err, val) {
+    function (err: any, val: any) {
       if (err) {
         res.status(404).json({ message: err.message });
       }
@@ -55,37 +54,43 @@ router.get('/deleteRoom', function (req, res) {
 });
 
 router.get('/getContacts', function (req, res) {
-  Room.find({ participants: req.headers.username }, function (err, rooms) {
-    if (err) {
-      res.status(404).json({ message: err.message });
-    }
-    if (rooms) {
-      contacts = [];
-      for (let room of rooms) {
-        contacts = contacts.concat(
-          room.participants.filter((p) => p !== req.headers.username)
+  Room.find(
+    { participants: req.headers.username },
+    function (err: any, rooms: any) {
+      if (err) {
+        res.status(404).json({ message: err.message });
+      }
+      if (rooms) {
+        let contacts: string[] = [];
+        for (let room of rooms) {
+          contacts = contacts.concat(
+            room.participants.filter((p: string) => p !== req.headers.username)
+          );
+        }
+        User.find(
+          { username: { $all: contacts } },
+          function (err: any, users: any) {
+            if (err) {
+              res.status(404).json({ message: err.message });
+            }
+            let contacts: any = [];
+            users.forEach((user: any) => {
+              contacts.push({
+                username: user.username,
+                name: user.name,
+                avatar: user.avatar,
+              });
+            });
+            res.json({ contacts: contacts });
+          }
         );
       }
-      User.find({ username: { $all: contacts } }, function (err, users) {
-        if (err) {
-          res.status(404).json({ message: err.message });
-        }
-        let contacts = [];
-        users.forEach((user) => {
-          contacts.push({
-            username: user.username,
-            name: user.name,
-            avatar: user.avatar,
-          });
-        });
-        res.json({ contacts: contacts });
-      });
     }
-  });
+  );
 });
 
 router.post('/sendMessage', function (req, res) {
-  Room.findById(req.body.roomId, (err, room) => {
+  Room.findById(req.body.roomId, (err: any, room: any) => {
     let date = new Date();
     room.messages.push({
       sender: req.body.sender,
@@ -96,7 +101,7 @@ router.post('/sendMessage', function (req, res) {
     Room.findByIdAndUpdate(
       req.body.roomId,
       { messages: room.messages },
-      (err, val) => {
+      (err: any, val: any) => {
         if (err) {
           res.status(404).json({ message: err.message });
         } else {
@@ -117,7 +122,7 @@ const io = new Server(httpServer, {
 
 io.on('connection', (socket) => {
   // console.log('A user connected');
-  let connRoomId;
+  let connRoomId: string;
   socket.on('room', (roomId) => {
     socket.join(roomId);
     connRoomId = roomId;
@@ -131,4 +136,4 @@ io.on('connection', (socket) => {
 
 httpServer.listen(8080);
 
-module.exports = router;
+export default router;

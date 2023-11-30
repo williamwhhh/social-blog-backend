@@ -22,4 +22,4 @@ var postSchema = mongoose.Schema({
   numOfRepost: Number,
 });
 
-module.exports = mongoose.model('post', postSchema);
+export default mongoose.model('post', postSchema);

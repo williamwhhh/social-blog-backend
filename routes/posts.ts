@@ -1,31 +1,29 @@
-var express = require('express');
-var router = express.Router();
-var mongoose = require('mongoose');
+import express from 'express';
+import mongoose from 'mongoose';
+import User from '../models/user';
+import Post from '../models/post';
+import fs from 'fs';
+import multer from 'multer';
 
+const router = express.Router();
 mongoose.connect('mongodb://localhost/my_db');
-
-var User = require('../models/user');
-var Post = require('../models/post');
-var fs = require('fs');
-const multer = require('multer');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'public/images');
   },
   filename: (req, file, cb) => {
-    cb(
-      null,
-      req.session.user.username + '-' + Date.now() + '-' + file.originalname
-    );
+    const user = (req.session as any).user;
+    cb(null, user.username + '-' + Date.now() + '-' + file.originalname);
   },
 });
 
 const upload = multer({ storage: storage });
 
 router.post('/addPost', upload.array('images[]'), function (req, res) {
-  let imagePaths = [];
-  req.files.forEach((i) => {
+  let imagePaths: string[] = [];
+  const files = (req as any).files;
+  files.forEach((i: any) => {
     imagePaths.push(i.filename);
   });
   let date = new Date();
@@ -40,7 +38,7 @@ router.post('/addPost', upload.array('images[]'), function (req, res) {
       date.toLocaleTimeString().slice(0) + ', ' + date.toDateString().slice(4),
     comments: [],
   });
-  newPost.save(function (err, obj) {
+  newPost.save(function (err: any, obj: any) {
     if (err) {
       res.status(404).json({ message: err.message });
     } else {
@@ -50,11 +48,11 @@ router.post('/addPost', upload.array('images[]'), function (req, res) {
 });
 
 router.post('/removePost', function (req, res) {
-  Post.findByIdAndRemove(req.body.id, function (err, val) {
+  Post.findByIdAndRemove(req.body.id, function (err: any, val: any) {
     if (err) {
       res.status(404).json({ message: err.message });
     } else {
-      req.body.images.forEach((image) => {
+      req.body.images.forEach((image: string) => {
         fs.unlinkSync(`./public/images/${image}`);
       });
       res.json({ message: 'Deleted' });
@@ -63,7 +61,7 @@ router.post('/removePost', function (req, res) {
 });
 
 router.get('/getAllPosts', function (req, res) {
-  Post.find({}, function (err, posts) {
+  Post.find({}, function (err: any, posts: any) {
     if (err) {
       res.status(404).json({ message: err.message });
     } else {
@@ -73,17 +71,20 @@ router.get('/getAllPosts', function (req, res) {
 });
 
 router.get('/getMyPosts', function (req, res) {
-  Post.find({ username: req.headers.username }, function (err, posts) {
-    if (err) {
-      res.status(404).json({ message: err.message });
-    } else {
-      res.json({ message: 'My Posts Loaded', posts: posts });
+  Post.find(
+    { username: req.headers.username },
+    function (err: any, posts: any) {
+      if (err) {
+        res.status(404).json({ message: err.message });
+      } else {
+        res.json({ message: 'My Posts Loaded', posts: posts });
+      }
     }
-  });
+  );
 });
 
 router.get('/getPost', function (req, res) {
-  Post.findById(req.headers.id, function (err, post) {
+  Post.findById(req.headers.id, function (err: any, post: any) {
     if (err) {
       res.status(404).json({ message: err.message });
     } else {
@@ -93,7 +94,7 @@ router.get('/getPost', function (req, res) {
 });
 
 router.post('/bookmark', function (req, response) {
-  User.findOne({ email: req.body.email }, (err, res) => {
+  User.findOne({ email: req.body.email }, (err: any, res: any) => {
     if (err) {
       response.status(404).json({ message: err.message });
     }
@@ -101,7 +102,7 @@ router.post('/bookmark', function (req, response) {
     User.findOneAndUpdate(
       { email: req.body.email },
       { bookmarks: res.bookmarks },
-      (err, res) => {
+      (err: any, res: any) => {
         if (err) {
           response.status(404).json({ message: err.message });
         }
@@ -112,14 +113,14 @@ router.post('/bookmark', function (req, response) {
 });
 
 router.get('/getBookmarks', function (req, res) {
-  User.findOne({ email: req.headers.email }, (err, user) => {
+  User.findOne({ email: req.headers.email }, (err: any, user: any) => {
     if (err) {
       res.status(404).json({ message: err.message });
     }
 
-    var promise = (id) => {
+    var promise = (id: string) => {
       return new Promise((resolve, reject) => {
-        Post.findById(id, function (err, post) {
+        Post.findById(id, function (err: any, post: any) {
           if (err) {
             reject(err);
           }
@@ -139,7 +140,7 @@ router.get('/getBookmarks', function (req, res) {
       });
     };
 
-    let promises = user.bookmarks.map((id) => promise(id));
+    let promises = user.bookmarks.map((id: any) => promise(id));
 
     Promise.all(promises).then(
       (val) => {
@@ -153,7 +154,7 @@ router.get('/getBookmarks', function (req, res) {
 });
 
 router.post('/removeBookmark', function (req, response) {
-  User.findOne({ email: req.body.email }, (err, res) => {
+  User.findOne({ email: req.body.email }, (err: any, res: any) => {
     if (err) {
       response.status(404).json({ message: err.message });
     }
@@ -164,7 +165,7 @@ router.post('/removeBookmark', function (req, response) {
     User.findOneAndUpdate(
       { email: req.body.email },
       { bookmarks: res.bookmarks },
-      (err, res) => {
+      (err: any, res: any) => {
         if (err) {
           response.status(404).json({ message: err.message });
         }
@@ -175,7 +176,7 @@ router.post('/removeBookmark', function (req, response) {
 });
 
 router.post('/likePost', function (req, response) {
-  User.findOne({ email: req.body.email }, (err, res) => {
+  User.findOne({ email: req.body.email }, (err: any, res: any) => {
     if (err) {
       response.status(404).json({ message: err.message });
     }
@@ -183,7 +184,7 @@ router.post('/likePost', function (req, response) {
     User.findOneAndUpdate(
       { email: req.body.email },
       { likedPosts: res.likedPosts },
-      (err, res) => {
+      (err: any, res: any) => {
         if (err) {
           response.status(404).json({ message: err.message });
         }
@@ -194,14 +195,14 @@ router.post('/likePost', function (req, response) {
 });
 
 router.get('/getLikedPosts', function (req, res) {
-  User.findOne({ email: req.headers.email }, (err, user) => {
+  User.findOne({ email: req.headers.email }, (err: any, user: any) => {
     if (err) {
       res.status(404).json({ message: err.message });
     }
 
-    var promise = (id) => {
+    var promise = (id: string) => {
       return new Promise((resolve, reject) => {
-        Post.findById(id, function (err, post) {
+        Post.findById(id, function (err: any, post: any) {
           if (err) {
             reject(err);
           }
@@ -221,7 +222,7 @@ router.get('/getLikedPosts', function (req, res) {
       });
     };
 
-    let promises = user.likedPosts.map((id) => promise(id));
+    let promises = user.likedPosts.map((id: string) => promise(id));
 
     Promise.all(promises).then(
       (val) => {
@@ -235,7 +236,7 @@ router.get('/getLikedPosts', function (req, res) {
 });
 
 router.post('/unlikePost', function (req, response) {
-  User.findOne({ email: req.body.email }, (err, res) => {
+  User.findOne({ email: req.body.email }, (err: any, res: any) => {
     if (err) {
       response.status(404).json({ message: err.message });
     }
@@ -246,25 +247,29 @@ router.post('/unlikePost', function (req, response) {
     User.findOneAndUpdate(
       { email: req.body.email },
       { likedPosts: res.likedPosts },
-      (err, res) => {
+      (err: any, res: any) => {
         if (err) {
           response.status(404).json({ message: err.message });
         }
       }
     );
-    response.json({ message: 'unliked the post', likedPosts: res.likedPosts });
+    response.json({
+      message: 'unliked the post',
+      likedPosts: res.likedPosts,
+    });
   });
 });
 
 router.post('/addComment', upload.array('images[]'), function (req, res) {
-  let imagePaths = [];
-  req.files.forEach((i) => {
+  let imagePaths: string[] = [];
+  const files = (req as any).files;
+  files.forEach((i: any) => {
     imagePaths.push(i.filename);
   });
-  var comments = [];
+  var comments: any[] = [];
 
-  const updatePost = new Promise((resolve, reject) => {
-    Post.findById(req.body.postId, (err, val) => {
+  const updatePost = new Promise<void>((resolve, reject) => {
+    Post.findById(req.body.postId, (err: any, val: any) => {
       if (err) {
         reject(err);
       }
@@ -282,7 +287,7 @@ router.post('/addComment', upload.array('images[]'), function (req, res) {
       Post.findByIdAndUpdate(
         req.body.postId,
         { comments: val.comments },
-        (err, val2) => {
+        (err: any, val2: any) => {
           if (err) {
             reject(err);
           }
@@ -293,8 +298,8 @@ router.post('/addComment', upload.array('images[]'), function (req, res) {
     });
   });
 
-  const updateUser = new Promise((resolve, reject) => {
-    User.findOne({ username: req.body.username }, (err, val) => {
+  const updateUser = new Promise<void>((resolve, reject) => {
+    User.findOne({ username: req.body.username }, (err: any, val: any) => {
       if (err) {
         reject(err);
       }
@@ -306,7 +311,7 @@ router.post('/addComment', upload.array('images[]'), function (req, res) {
       User.findOneAndUpdate(
         { username: req.body.username },
         { commentedPosts: val.commentedPosts },
-        (err, val2) => {
+        (err: any, val2: any) => {
           if (err) {
             reject(err);
           }
@@ -331,7 +336,7 @@ router.post('/addComment', upload.array('images[]'), function (req, res) {
 
 router.post('/removeComment', async function (req, res) {
   const updatePost = new Promise((resolve, reject) => {
-    Post.findById(req.body.postId, function (err, val) {
+    Post.findById(req.body.postId, function (err: any, val: any) {
       if (err) {
         reject();
       } else {
@@ -341,7 +346,7 @@ router.post('/removeComment', async function (req, res) {
             val.comments[i].text === req.body.text
           ) {
             val.comments.splice(i, 1);
-            req.body.images.forEach((image) => {
+            req.body.images.forEach((image: string) => {
               fs.unlinkSync(`./public/images/${image}`);
             });
             break;
@@ -350,7 +355,7 @@ router.post('/removeComment', async function (req, res) {
         Post.findByIdAndUpdate(
           req.body.postId,
           { comments: val.comments },
-          (err, val2) => {
+          (err: any, val2: any) => {
             if (err) {
               reject();
             }
@@ -361,8 +366,8 @@ router.post('/removeComment', async function (req, res) {
     });
   });
 
-  const updateUser = (comments) =>
-    new Promise((resolve, reject) => {
+  const updateUser = (comments: any) =>
+    new Promise<void>((resolve, reject) => {
       for (let i = 0; i < comments.length; i++) {
         if (comments[i].username === req.body.username) {
           resolve();
@@ -373,7 +378,7 @@ router.post('/removeComment', async function (req, res) {
           return;
         }
       }
-      User.findOne({ username: req.body.username }, (err, val) => {
+      User.findOne({ username: req.body.username }, (err: any, val: any) => {
         if (err) {
           reject(err);
         }
@@ -384,7 +389,7 @@ router.post('/removeComment', async function (req, res) {
         User.findOneAndUpdate(
           { username: req.body.username },
           { commentedPosts: val.commentedPosts },
-          (err, val2) => {
+          (err: any, val2: any) => {
             if (err) {
               reject(err);
             }
@@ -406,4 +411,4 @@ router.post('/removeComment', async function (req, res) {
   );
 });
 
-module.exports = router;
+export default router;
