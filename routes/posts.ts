@@ -1,12 +1,10 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import User from '../models/user';
 import Post from '../models/post';
 import fs from 'fs';
 import multer from 'multer';
 
 const router = express.Router();
-mongoose.connect('mongodb://localhost/my_db');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {

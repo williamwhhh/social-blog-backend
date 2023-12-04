@@ -3,8 +3,10 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import User from '../models/user';
 
+// Your server setup or other configuration code...
+
 const router = express.Router();
-mongoose.connect('mongodb://localhost/my_db');
+
 // User.find({ name: 'will', age: 20 }, (err, res) => {
 //   console.log(res);
 // });
@@ -38,7 +40,7 @@ router.post('/signup', function (req, res, next) {
       res.status(404).json({ message: err.message });
     }
     if (user) {
-      res.status(400).json({ error: 'the email has been registered' });
+      res.json({ error: 'the email has been registered' });
     } else {
       User.findOne(
         { username: req.body.username },
@@ -47,7 +49,7 @@ router.post('/signup', function (req, res, next) {
             res.status(404).json({ message: err.message });
           }
           if (user) {
-            res.status(400).json({ error: 'the username is already existed' });
+            res.json({ error: 'the username is already existed' });
           } else {
             const saltRounds = 10;
             bcrypt.genSalt(saltRounds, (err, salt) => {

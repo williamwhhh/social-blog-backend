@@ -7,17 +7,25 @@ import session from 'express-session';
 import logger from 'morgan';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-
+import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 import authRouter from './routes/auth';
 import usersRouter from './routes/users';
 import postRouter from './routes/posts';
 import messagesRouter from './routes/messages';
 
+dotenv.config();
 const app = express();
 // var store = new MongoDBStore({
 //   uri: 'mongodb://localhost:27017/connect_mongodb_session_test',
 //   collection: 'mySessions',
 // });
+const dbUrl: string =
+  process.env.NODE_ENV === 'test'
+    ? (process.env.TEST_DATABASE_URL as string)
+    : (process.env.DATABASE_URL as string);
+mongoose.connect(dbUrl);
+
 app.use(cors({ credentials: true, origin: true }));
 
 // view engine setup

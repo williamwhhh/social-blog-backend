@@ -1,12 +1,10 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import User from '../models/user';
 import Room from '../models/room';
 
 const router = express.Router();
-mongoose.connect('mongodb://localhost/my_db');
 
 router.get('/getRoomDetails', function (req, res) {
   Room.findOne(
